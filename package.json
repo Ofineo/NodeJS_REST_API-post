@@ -1,0 +1,27 @@
+{
+  "name": "nodejs_rest_api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ofineo/NodeJS_REST_API.git"
+  },
+  "author": "Jordi Melendez <ofineo@gmail.com> (http://www.jordimelendez.uk)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Ofineo/NodeJS_REST_API/issues"
+  },
+  "homepage": "https://github.com/Ofineo/NodeJS_REST_API#readme",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  }
+}
