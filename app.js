@@ -9,8 +9,34 @@ const feedRoutes = require("./routes/feed");
 const indexRoutes = require("./routes/index");
 
 const bodyParser = require("body-parser");
+const multer = require("multer");
 
 const app = express();
+//multer setting up
+const fileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "images");
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Math.random()}-${file.originalname}`);
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  if (
+    file.mimetype === "image/jpg" ||
+    file.mimetype === "image/jpeg" ||
+    file.mimetype === "image/png"
+  ) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
+
+app.use(
+  multer({ storage: fileStorage, fileFilter: fileFilter }).single("image")
+);
 
 app.use(bodyParser.json());
 
