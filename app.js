@@ -2,7 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 
 const MONGODB_URI =
-  "mongodb+srv://nodeComplete:rYX7GHW1EobK0XFw@node-complete-5hx8z.mongodb.net/shop?retryWrites=true&w=majority";
+  "mongodb+srv://nodeComplete:rYX7GHW1EobK0XFw@node-complete-5hx8z.mongodb.net/messages?retryWrites=true&w=majority";
 
 const bodyParser = require("body-parser");
 
