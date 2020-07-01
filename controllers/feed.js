@@ -4,7 +4,17 @@ const path = require("path");
 const fs = require("fs");
 
 exports.getFeed = (req, res, next) => {
+  const page = req.query.page || 1;
+  const itemsPerPage = 2;
+  let totalItems;
   Post.find()
+    .countDocuments()
+    .then((totalDocuments) => {
+      totalItems = totalDocuments;
+      return Post.find()
+      .skip((page-1)*itemsPerPage)
+      .limit(itemsPerPage);
+    })
     .then((posts) => {
       if (!posts) {
         const error = new Error("could not find the post");
@@ -14,6 +24,7 @@ exports.getFeed = (req, res, next) => {
       res.status(200).json({
         message: "posts fetched successfully",
         posts: posts,
+        totalItems:totalItems
       });
     })
     .catch((err) => {
@@ -37,7 +48,7 @@ exports.postPost = (req, res, next) => {
     throw error;
   }
   const title = req.body.title;
-  const imageUrl = req.file.path; //.replace("\\", "/");
+  const imageUrl = req.file.path.replace("\\", "/");
   const content = req.body.content;
   const creator = req.body.creator;
   const post = new Post({
