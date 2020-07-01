@@ -24,10 +24,9 @@ exports.postPost = (req, res, next) => {
   const creator = req.body.creator;
   //TO DO create post in the db
   if (!errors.isEmpty()) {
-    res.status(422).json({
-      message: "validation failed, entered data has errors",
-      errors: errors.array(),
-    });
+    const error = new Error("validation failed, entered data has errors");
+    error.statusCode = 422;
+    throw error;
   }
   const post = new Post({
     title: title,
@@ -44,8 +43,9 @@ exports.postPost = (req, res, next) => {
       });
     })
     .catch((err) => {
-      const error = new Error(err);
-      error.httpStatusCode = 500;
-      return next(error);
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(error);
     });
 };
