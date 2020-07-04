@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+
+const isAuth = require("../middleware/is-auth");
 const User = require("../models/user");
 const authController = require("../controllers/auth");
 
@@ -24,11 +26,21 @@ router.put(
 );
 
 router.post(
-  "/login",[
+  "/login",
+  [
     body("email").not().isEmpty().isEmail().normalizeEmail(),
-    body("password").trim().isLength({ min: 5 })
+    body("password").trim().isLength({ min: 5 }),
   ],
   authController.postLogin
+);
+
+router.get("/status", isAuth, authController.getStatus);
+
+router.put(
+  "/status",
+  [body("status").trim().not().isEmpty()],
+  isAuth,
+  authController.putStatus
 );
 
 module.exports = router;

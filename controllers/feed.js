@@ -1,7 +1,9 @@
 const { validationResult } = require("express-validator");
-const Post = require("../models/post");
 const path = require("path");
 const fs = require("fs");
+
+const Post = require("../models/post");
+const User = require("../models/user");
 
 exports.getFeed = (req, res, next) => {
   const page = req.query.page || 1;
@@ -12,8 +14,8 @@ exports.getFeed = (req, res, next) => {
     .then((totalDocuments) => {
       totalItems = totalDocuments;
       return Post.find()
-      .skip((page-1)*itemsPerPage)
-      .limit(itemsPerPage);
+        .skip((page - 1) * itemsPerPage)
+        .limit(itemsPerPage);
     })
     .then((posts) => {
       if (!posts) {
@@ -24,7 +26,7 @@ exports.getFeed = (req, res, next) => {
       res.status(200).json({
         message: "posts fetched successfully",
         posts: posts,
-        totalItems:totalItems
+        totalItems: totalItems,
       });
     })
     .catch((err) => {
@@ -50,26 +52,36 @@ exports.postPost = (req, res, next) => {
   const title = req.body.title;
   const imageUrl = req.file.path.replace("\\", "/");
   const content = req.body.content;
-  const creator = req.body.creator;
+  let creator;
   const post = new Post({
     title: title,
     imageUrl: imageUrl,
     content: content,
-    creator: { name: "jordi" },
+    creator: req.userId,
   });
+  console.log(post, req.userId);
   post
     .save()
     .then((result) => {
+      return User.findById(req.userId);
+    })
+    .then((user) => {
+      creator = user;
+      user.posts.push(post); //mongoose will do all the heavy lifting of attaching the post id to the user model
+      return user.save();
+    })
+    .then((result) => {
       res.status(201).json({
         message: "post created successfully",
-        post: result,
+        post: post,
+        creator: { _id: creator._id, name: creator.name },
       });
     })
     .catch((err) => {
       if (!err.statusCode) {
         err.statusCode = 500;
       }
-      next(error);
+      next(err);
     });
 };
 
@@ -91,7 +103,7 @@ exports.getPosts = (req, res, next) => {
       if (!err.statusCode) {
         err.statusCode = 500;
       }
-      next(error);
+      next(err);
     });
 };
 
@@ -119,6 +131,11 @@ exports.updatePost = (req, res, next) => {
         error.statusCode = 404;
         throw error;
       }
+      if (post.creator.toString() !== req.userId) {
+        const error = new Error("not authorized");
+        error.statusCode = 403;
+        throw error;
+      }
       if (imageUrl !== post.imageUrl) clearImage(post.imageUrl);
       post.title = title;
       post.imageUrl = imageUrl;
@@ -132,7 +149,7 @@ exports.updatePost = (req, res, next) => {
       if (!err.statusCode) {
         err.statusCode = 500;
       }
-      next(error);
+      next(err);
     });
 };
 
@@ -145,8 +162,20 @@ exports.deletePost = (req, res, next) => {
         error.statusCode = 404;
         throw error;
       }
+      if (post.creator.toString() !== req.userId) {
+        const error = new Error("not authorized");
+        error.statusCode = 403;
+        throw error;
+      }
       clearImage(post.imageUrl);
       return Post.findByIdAndRemove(postId);
+    })
+    .then((result) => {
+      return User.findById(req.userId);
+    })
+    .then((user) => {
+      user.posts.pull(postId);
+      return user.save();
     })
     .then((result) => {
       res.status(200).json({ message: "deleted post" });
@@ -155,7 +184,7 @@ exports.deletePost = (req, res, next) => {
       if (!err.statusCode) {
         err.statusCode = 500;
       }
-      next(error);
+      next(err);
     });
 };
 

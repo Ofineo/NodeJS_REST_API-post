@@ -77,7 +77,49 @@ exports.postLogin = (req, res, next) => {
         constants.jwtSecret,
         { expiresIn: "1h" }
       );
-        res.status(200).json({token:token,userId:loadedUser._id.toString()})
+      res.status(200).json({ token: token, userId: loadedUser._id.toString() });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
+
+exports.getStatus = (req, res, next) => {
+  User.findById(req.userId)
+    .then((user) => {
+      if (!user) {
+        const error = new Error("couldnt find user");
+        error.statusCode = 404;
+        throw error;
+      }
+      res.status(200).json({ status: user.status });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
+
+exports.putStatus = (req, res, next) => {
+  const status = req.body.status;
+  console.log(status);
+  User.findById(req.userId)
+    .then((user) => {
+      if (!user) {
+        const error = new Error("couldnt find user");
+        error.statusCode = 404;
+        throw error;
+      }
+      user.status = status;
+      return user.save();
+    })
+    .then((result) => {
+      res.status(200).json({ status: status });
     })
     .catch((err) => {
       if (!err.statusCode) {
