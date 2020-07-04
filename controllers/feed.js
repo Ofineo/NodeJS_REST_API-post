@@ -1,10 +1,11 @@
 const { validationResult } = require("express-validator");
 const path = require("path");
 const fs = require("fs");
+const io = require("../socket");
 
 const Post = require("../models/post");
 const User = require("../models/user");
-const { SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION } = require("constants");
+const constants = require("constants");
 
 exports.getFeed = async (req, res, next) => {
   const page = req.query.page || 1;
@@ -12,6 +13,7 @@ exports.getFeed = async (req, res, next) => {
   try {
     const totalItems = await Post.find().countDocuments();
     const posts = await Post.find()
+      .populate("creator")
       .skip((page - 1) * itemsPerPage)
       .limit(itemsPerPage);
     if (!posts) {
@@ -58,6 +60,10 @@ exports.postPost = async (req, res, next) => {
     const user = await User.findById(req.userId);
     user.posts.push(post); //mongoose will do all the heavy lifting of attaching the post id to the user model
     await user.save();
+    io.getIO().emit("posts", {
+      action: "create",
+      post: { ...post.doc, creator: { _id: req.userId, name: user.name } },
+    });
     res.status(201).json({
       message: "post created successfully",
       post: post,
