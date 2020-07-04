@@ -14,6 +14,7 @@ exports.getFeed = async (req, res, next) => {
     const totalItems = await Post.find().countDocuments();
     const posts = await Post.find()
       .populate("creator")
+      .sort({ createdAt: -1 })
       .skip((page - 1) * itemsPerPage)
       .limit(itemsPerPage);
     if (!posts) {
@@ -117,13 +118,13 @@ exports.updatePost = async (req, res, next) => {
     throw error;
   }
   try {
-    const post = await Post.findById(postId);
+    const post = await (await Post.findById(postId)).populate("creator");
     if (!post) {
       const error = new Error("could not find the post");
       error.statusCode = 404;
       throw error;
     }
-    if (post.creator.toString() !== req.userId) {
+    if (post.creator._id.toString() !== req.userId) {
       const error = new Error("not authorized");
       error.statusCode = 403;
       throw error;
@@ -133,7 +134,7 @@ exports.updatePost = async (req, res, next) => {
     post.imageUrl = imageUrl;
     post.content = content;
     await post.save();
-
+    io.getIO.emit("posts", { action: "update", post: post });
     res.status(200).json({ message: "post updated", post: post });
   } catch (err) {
     if (!err.statusCode) {
