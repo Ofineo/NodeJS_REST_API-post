@@ -14,12 +14,12 @@ router.put(
     body("email")
       .isEmail()
       .withMessage("please enter a valid email")
+      .normalizeEmail()
       .custom((value, { req }) => {
         return User.findOne({ email: value }).then((userDoc) => {
           if (userDoc) return Promise.reject("Email address in use already");
         });
-      })
-      .normalizeEmail(),
+      }),
     body("password").trim().isLength({ min: 5 }),
   ],
   authController.signup
