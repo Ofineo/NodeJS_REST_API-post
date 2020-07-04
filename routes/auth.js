@@ -24,9 +24,9 @@ router.put(
 );
 
 router.post(
-  "/login"[
-    (body("email").not().isEmpty().isEmail().normalizeEmail(),
-    body("password").trim().isLength({ min: 5 }))
+  "/login",[
+    body("email").not().isEmpty().isEmail().normalizeEmail(),
+    body("password").trim().isLength({ min: 5 })
   ],
   authController.postLogin
 );
