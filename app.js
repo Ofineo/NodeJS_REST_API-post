@@ -5,12 +5,11 @@ const path = require("path");
 const MONGODB_URI =
   "mongodb+srv://nodeComplete:rYX7GHW1EobK0XFw@node-complete-5hx8z.mongodb.net/messages?retryWrites=true&w=majority";
 
-const feedRoutes = require("./routes/feed");
-const indexRoutes = require("./routes/index");
-const authRoutes = require("./routes/auth");
-
 const bodyParser = require("body-parser");
 const multer = require("multer");
+var graphqlHTTP = require('express-graphql');
+const graphqlSchema = require('./graphql/schema');
+const graphqlResolver = require('./graphql/resolver');
 
 const app = express();
 //multer setting up
@@ -54,9 +53,10 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/feed", feedRoutes);
-app.use(indexRoutes);
-app.use("/auth", authRoutes);
+app.use('/graphql',graphqlHTTP({
+  schema:graphqlSchema,
+  rootValue:graphqlResolver
+}))
 
 app.use((error, req, res, next) => {
   console.log(error);
@@ -69,11 +69,7 @@ app.use((error, req, res, next) => {
 mongoose
   .connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then((result) => {
-    const server = app.listen(8080);
-    const io = require("./socket.io").init(server);
-    io.on("connection", (socket) => {
-      console.log("client socket connected");
-    });
+    app.listen(8080);
   })
   .catch((err) => {
     console.log(err);
