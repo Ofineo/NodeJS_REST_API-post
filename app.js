@@ -7,9 +7,9 @@ const MONGODB_URI =
 
 const bodyParser = require("body-parser");
 const multer = require("multer");
-var graphqlHTTP = require('express-graphql');
-const graphqlSchema = require('./graphql/schema');
-const graphqlResolver = require('./graphql/resolver');
+var graphqlHTTP = require("express-graphql");
+const graphqlSchema = require("./graphql/schema");
+const graphqlResolver = require("./graphql/resolver");
 
 const app = express();
 //multer setting up
@@ -53,11 +53,23 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/graphql',graphqlHTTP({
-  schema:graphqlSchema,
-  rootValue:graphqlResolver,
-  graphiql:true
-}))
+app.use(
+  "/graphql",
+  graphqlHTTP({
+    schema: graphqlSchema,
+    rootValue: graphqlResolver,
+    graphiql: true,
+    formatError(err) {
+      if (!err.originalError) {
+        return err;
+      }
+      const data = err.originalError.data;
+      const message = err.message || "An error ocurred.";
+      const code = err.originalError.code || 500;
+      return { message: message, status: code, data: data };
+    },
+  })
+);
 
 app.use((error, req, res, next) => {
   console.log(error);
