@@ -144,4 +144,24 @@ module.exports = {
       totalPosts: totalPosts,
     };
   },
+  getPost: async function ({ postId }, req) {
+    console.log(postId);
+    if (!req.isAuth) {
+      const error = new Error("Not Authenticated.");
+      error.statusCode = 401;
+      throw error;
+    }
+    const post = await Post.findById(postId).populate("creator");
+    if (!post) {
+      const error = new Error("Post not found");
+      error.statusCode = 404;
+      throw error;
+    }
+    return {
+      ...post._doc,
+      _id: post._id.toString(),
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString(),
+    };
+  },
 };

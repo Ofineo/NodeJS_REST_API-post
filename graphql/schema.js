@@ -51,6 +51,7 @@ type RootMutation {
 type RootQuery {
     login(email:String!,password:String!): AuthData
     posts(page:Int): PostData!
+    getPost(postId:String!):Post!
 }
 
 schema{
