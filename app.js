@@ -1,7 +1,6 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
-const fs = require("fs");
 
 const MONGODB_URI =
   "mongodb+srv://nodeComplete:rYX7GHW1EobK0XFw@node-complete-5hx8z.mongodb.net/messages?retryWrites=true&w=majority";
@@ -12,6 +11,7 @@ var graphqlHTTP = require("express-graphql");
 const graphqlSchema = require("./graphql/schema");
 const graphqlResolver = require("./graphql/resolver");
 const auth = require("./middleware/auth");
+const clearImage = require('./util/deleteImage');
 
 const app = express();
 //multer setting up
@@ -108,9 +108,3 @@ mongoose
     console.log(err);
   });
 
-const clearImage = (filePath) => {
-  filePath = path.join(__dirname, "..", filePath);
-  fs.unlink(filePath, (err) => {
-    console.log(err);
-  });
-};

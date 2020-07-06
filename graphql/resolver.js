@@ -5,6 +5,7 @@ const validator = require("validator");
 const jwt = require("jsonwebtoken");
 
 const constants = require("../constants/constants");
+const clearImage = require("../util/deleteImage");
 
 module.exports = {
   createUser: async function ({ userInput }, req) {
@@ -85,7 +86,6 @@ module.exports = {
     ) {
       errors.push({ message: "Content empty or too short!" });
     }
-    console.log(errors);
     if (errors.length > 0) {
       const error = new Error("invalid input.");
       error.data = errors;
@@ -99,7 +99,6 @@ module.exports = {
       error.code = 401;
       throw error;
     }
-    console.log(user);
     const post = new Post({
       title: postInput.title,
       imageUrl: postInput.imageUrl,
@@ -192,7 +191,6 @@ module.exports = {
     ) {
       errors.push({ message: "Content empty or too short!" });
     }
-    console.log(errors);
     if (errors.length > 0) {
       const error = new Error("invalid input.");
       error.data = errors;
@@ -205,12 +203,36 @@ module.exports = {
       post.imageUrl = postInput.imageUrl;
     }
     const updatedPost = await post.save();
-    console.log(post,postInput,updatedPost)
     return {
       ...updatedPost._doc,
       _id: updatedPost._id.toString(),
       createdAt: updatedPost.createdAt.toISOString(),
       updatedAt: updatedPost.updatedAt.toISOString(),
     };
+  },
+  deletePost: async function ({ postId }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not Authenticated.");
+      error.statusCode = 401;
+    }
+    const post = await Post.findById(postId);
+    if (!post) {
+      const error = new Error("Post not found");
+      error.statusCode = 404;
+      throw error;
+    }
+    if (post.creator.toString() !== req.userId.toString()) {
+      const error = new Error(
+        "This user is not authorized to delete this post"
+      );
+      error.statusCode = 403;
+      throw error;
+    }
+    clearImage(post.imageUrl);
+    await Post.findByIdAndDelete(postId);
+    const user = await User.findById(req.userId);
+    user.posts.pull(postId);
+    await user.save();
+    return true;
   },
 };
