@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
+const fs = require("fs");
 
 const MONGODB_URI =
   "mongodb+srv://nodeComplete:rYX7GHW1EobK0XFw@node-complete-5hx8z.mongodb.net/messages?retryWrites=true&w=majority";
@@ -10,7 +11,7 @@ const multer = require("multer");
 var graphqlHTTP = require("express-graphql");
 const graphqlSchema = require("./graphql/schema");
 const graphqlResolver = require("./graphql/resolver");
-const auth = require('./middleware/auth');
+const auth = require("./middleware/auth");
 
 const app = express();
 //multer setting up
@@ -53,8 +54,24 @@ app.use((req, res, next) => {
   }
   next();
 });
-
 app.use(auth);
+
+app.put("/post-image", (req, res, next) => {
+  if(!req.isAuth){
+    throw new Error('Not authorized');
+  }
+  if (!req.file) {
+    res.status(200).json({ message: "no image was appended" });
+  }
+  if (req.body.oldPath) {
+    clearImage(req.body.oldPath);
+  }
+  return res
+    .status(201)
+    .json({ message: "File stored", filePath: req.file.path.replace("\\", "/") });
+});
+
+
 
 app.use(
   "/graphql",
@@ -90,3 +107,10 @@ mongoose
   .catch((err) => {
     console.log(err);
   });
+
+const clearImage = (filePath) => {
+  filePath = path.join(__dirname, "..", filePath);
+  fs.unlink(filePath, (err) => {
+    console.log(err);
+  });
+};
