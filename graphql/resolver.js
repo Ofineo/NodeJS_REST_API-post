@@ -92,7 +92,6 @@ module.exports = {
       error.code = 422;
       throw error;
     }
-    console.log("looking for the user");
     const user = await User.findById(req.userId);
     if (!user) {
       const error = new Error("invalid user.");
@@ -145,7 +144,6 @@ module.exports = {
     };
   },
   getPost: async function ({ postId }, req) {
-    console.log(postId);
     if (!req.isAuth) {
       const error = new Error("Not Authenticated.");
       error.statusCode = 401;
@@ -162,6 +160,57 @@ module.exports = {
       _id: post._id.toString(),
       createdAt: post.createdAt.toISOString(),
       updatedAt: post.updatedAt.toISOString(),
+    };
+  },
+  updatePost: async function ({ postId, postInput }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not Authenticated.");
+      error.statusCode = 401;
+      throw error;
+    }
+    const post = await Post.findById(postId).populate("creator");
+    if (!post) {
+      const error = new Error("Post not found");
+      error.statusCode = 404;
+      throw error;
+    }
+    if (post.creator._id.toString() !== req.userId.toString()) {
+      const error = new Error("This user is not authorized to edit thid post");
+      error.statusCode = 403;
+      throw error;
+    }
+    const errors = [];
+    if (
+      validator.isEmpty(postInput.title) ||
+      !validator.isLength(postInput.title, { min: 5 })
+    ) {
+      errors.push({ message: "Title is invalid." });
+    }
+    if (
+      validator.isEmpty(postInput.content) ||
+      !validator.isLength(postInput.content, { min: 5 })
+    ) {
+      errors.push({ message: "Content empty or too short!" });
+    }
+    console.log(errors);
+    if (errors.length > 0) {
+      const error = new Error("invalid input.");
+      error.data = errors;
+      error.code = 422;
+      throw error;
+    }
+    post.title = postInput.title;
+    post.content = postInput.content;
+    if (post.imageUrl !== "undefined") {
+      post.imageUrl = postInput.imageUrl;
+    }
+    const updatedPost = await post.save();
+    console.log(post,postInput,updatedPost)
+    return {
+      ...updatedPost._doc,
+      _id: updatedPost._id.toString(),
+      createdAt: updatedPost.createdAt.toISOString(),
+      updatedAt: updatedPost.updatedAt.toISOString(),
     };
   },
 };
