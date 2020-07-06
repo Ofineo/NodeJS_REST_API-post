@@ -235,4 +235,18 @@ module.exports = {
     await user.save();
     return true;
   },
+  user: async function(args,req){
+    if (!req.isAuth) {
+      const error = new Error("Not Authenticated.");
+      error.statusCode = 401;
+    }
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("invalid user.");
+      error.data = errors;
+      error.code = 401;
+      throw error;
+    }
+    return {...user._doc,_id:user._id.toString() }  
+  }
 };
