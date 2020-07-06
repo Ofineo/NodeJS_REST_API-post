@@ -67,7 +67,6 @@ module.exports = {
   },
 
   createPost: async function ({ postInput }, req) {
-    console.log(postInput,req.userId, req.isAuth);
     if (!req.isAuth) {
       const error = new Error("Not Authenticated.");
       error.statusCode = 401;
@@ -86,16 +85,16 @@ module.exports = {
     ) {
       errors.push({ message: "Content empty or too short!" });
     }
-    console.log(errors)
+    console.log(errors);
     if (errors.length > 0) {
       const error = new Error("invalid input.");
       error.data = errors;
       error.code = 422;
       throw error;
     }
-    console.log('looking for the user')
+    console.log("looking for the user");
     const user = await User.findById(req.userId);
-    if(!user){
+    if (!user) {
       const error = new Error("invalid user.");
       error.data = errors;
       error.code = 401;
@@ -116,6 +115,33 @@ module.exports = {
       _id: newPost._id.toString(),
       createdAt: newPost.createdAt.toISOString(),
       updatedAt: newPost.updatedAt.toISOString(),
+    };
+  },
+  posts: async function ({ page }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not Authenticated.");
+      error.statusCode = 401;
+      throw error;
+    }
+    if (!page) page = 1;
+
+    const totalPosts = await Post.find().countDocuments();
+    const posts = await Post.find()
+      .sort({ createdAt: -1 })
+      //items per page are usually managed in the frontend by user selection
+      .skip((page - 1) * constants.ITEMS_PER_PAGE)
+      .limit(constants.ITEMS_PER_PAGE)
+      .populate("creator");
+    return {
+      posts: posts.map((p) => {
+        return {
+          ...p._doc,
+          _id: p._id.toString(),
+          createdAt: p.createdAt.toISOString(),
+          updatedAt: p.updatedAt.toISOString(),
+        };
+      }),
+      totalPosts: totalPosts,
     };
   },
 };

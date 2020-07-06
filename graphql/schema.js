@@ -33,6 +33,11 @@ input PostInputData{
     imageUrl: String!
 }
 
+type PostData {
+    posts:[Post!]!
+    totalPosts:Int!
+}
+
 type AuthData{
     token:String!
     userId:String!
@@ -45,6 +50,7 @@ type RootMutation {
 
 type RootQuery {
     login(email:String!,password:String!): AuthData
+    posts(page:Int): PostData!
 }
 
 schema{
