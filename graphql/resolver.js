@@ -1,4 +1,5 @@
 const User = require("../models/user");
+const Post = require("../models/post");
 const bcrypt = require("bcryptjs");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
@@ -40,7 +41,7 @@ module.exports = {
     return { ...newUser._doc, _id: newUser._id.toString() };
   },
 
-  login: async function ({ email, password }) {
+  login: async function ({ email, password }, req) {
     const user = await User.findOne({ email: email });
     if (!user) {
       const error = new Error("there is no user with that password.");
@@ -55,13 +56,66 @@ module.exports = {
     }
     const token = jwt.sign(
       {
-        email: email,
         userId: user._id.toString(),
+        email: user.email,
       },
       constants.jwtSecret,
       { expiresIn: "1h" }
     );
 
     return { token: token, userId: user._id.toString() };
+  },
+
+  createPost: async function ({ postInput }, req) {
+    console.log(postInput,req.userId, req.isAuth);
+    if (!req.isAuth) {
+      const error = new Error("Not Authenticated.");
+      error.statusCode = 401;
+      throw error;
+    }
+    const errors = [];
+    if (
+      validator.isEmpty(postInput.title) ||
+      !validator.isLength(postInput.title, { min: 5 })
+    ) {
+      errors.push({ message: "Title is invalid." });
+    }
+    if (
+      validator.isEmpty(postInput.content) ||
+      !validator.isLength(postInput.content, { min: 5 })
+    ) {
+      errors.push({ message: "Content empty or too short!" });
+    }
+    console.log(errors)
+    if (errors.length > 0) {
+      const error = new Error("invalid input.");
+      error.data = errors;
+      error.code = 422;
+      throw error;
+    }
+    console.log('looking for the user')
+    const user = await User.findById(req.userId);
+    if(!user){
+      const error = new Error("invalid user.");
+      error.data = errors;
+      error.code = 401;
+      throw error;
+    }
+    console.log(user);
+    const post = new Post({
+      title: postInput.title,
+      imageUrl: postInput.imageUrl,
+      content: postInput.content,
+      creator: user,
+    });
+    const newPost = await post.save();
+    user.posts.push(newPost);
+    await user.save();
+    return {
+      ...newPost._doc,
+      _id: newPost._id.toString(),
+      createdAt: newPost.createdAt.toISOString(),
+      updatedAt: newPost.updatedAt.toISOString(),
+    };
   },
 };
